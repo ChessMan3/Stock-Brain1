@@ -25,7 +25,7 @@
 #include "search.h"
 #include "thread.h"
 #include "uci.h"
-#include "syzygy/tbprobe.h"
+#include "tbprobe.h"
 
 ThreadPool Threads; // Global object
 
@@ -38,6 +38,7 @@ Thread::Thread() {
   maxPly = callsCnt = 0;
   tbHits = 0;
   idx = Threads.size(); // Start from 0
+  meanH = 0;	
 
   std::unique_lock<Mutex> lk(mutex);
   searching = true;

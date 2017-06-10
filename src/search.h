@@ -45,7 +45,11 @@ struct Stack {
   Move killers[2];
   Value staticEval;
   int statScore;
+  int rHist;
   int moveCount;
+  Depth newDepth;	
+  uint8_t forcedMove;
+  uint8_t forcingTree;
 };
 
 
