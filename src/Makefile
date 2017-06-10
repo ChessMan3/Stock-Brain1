@@ -28,7 +28,7 @@ ifeq ($(KERNEL),Linux)
 endif
 
 ### Executable name
-EXE = McBrain_2017_v24
+EXE = stockfish
 
 ### Installation dir definitions
 PREFIX = /usr/local
@@ -38,10 +38,9 @@ BINDIR = $(PREFIX)/bin
 PGOBENCH = ./$(EXE) bench
 
 ### Object files
-OBJS = movegen.o search.o evaluate.o material.o position.o psqt.o \
-	pawns.o movepick.o thread.o bitbase.o bitboard.o endgame.o \
-	tbprobe.o timeman.o tt.o uci.o ucioption.o misc.o  \
-	main.o tzbook.o benchmark.o
+OBJS = benchmark.o bitbase.o bitboard.o endgame.o evaluate.o main.o \
+	material.o misc.o movegen.o movepick.o pawns.o position.o psqt.o \
+	search.o thread.o timeman.o tt.o uci.o ucioption.o syzygy/tbprobe.o
 
 ### ==========================================================================
 ### Section 2. High-level Configuration
@@ -151,7 +150,7 @@ endif
 ifeq ($(COMP),gcc)
 	comp=gcc
 	CXX=g++
-	CXXFLAGS += -pedantic -Wextra -Wshadow  -fprefetch-loop-arrays --param max-unroll-times=4 -ffast-math
+	CXXFLAGS += -pedantic -Wextra -Wshadow
 
 	ifeq ($(ARCH),armv7)
 		ifeq ($(OS),Android)
@@ -229,8 +228,8 @@ endif
 endif
 
 ifeq ($(KERNEL),Darwin)
-	CXXFLAGS += -arch $(arch) -mmacosx-version-min=10.12
-	LDFLAGS += -arch $(arch) -mmacosx-version-min=10.12
+	CXXFLAGS += -arch $(arch) -mmacosx-version-min=10.9
+	LDFLAGS += -arch $(arch) -mmacosx-version-min=10.9
 endif
 
 ### Travis CI script uses COMPILER to overwrite CXX
@@ -290,7 +289,7 @@ ifeq ($(optimize),yes)
 
 	ifeq ($(comp),icc)
 		ifeq ($(KERNEL),Darwin)
-			CXXFLAGS += -mdynamic-no-pic -qopt-prefetch -unroll-aggressive
+			CXXFLAGS += -mdynamic-no-pic
 		endif
 	endif
 
@@ -316,13 +315,8 @@ endif
 ### 3.5 prefetch
 ifeq ($(prefetch),yes)
 	ifeq ($(sse),yes)
-		ifeq ($(comp),icc)
-		CXXFLAGS +=
-		DEPENDFLAGS +=
-	else
 		CXXFLAGS += -msse
 		DEPENDFLAGS += -msse
-		endif
 	endif
 else
 	CXXFLAGS += -DNO_PREFETCH
@@ -331,9 +325,9 @@ endif
 ### 3.6 popcnt
 ifeq ($(popcnt),yes)
 	ifeq ($(comp),icc)
-		CXXFLAGS += -xhost  -DUSE_POPCNT
+		CXXFLAGS += -msse3 -DUSE_POPCNT
 	else
-		CXXFLAGS += -msse4.2 -mpopcnt -DUSE_POPCNT
+		CXXFLAGS += -msse3 -mpopcnt -DUSE_POPCNT
 	endif
 endif
 
@@ -432,8 +426,6 @@ help:
 
 build: config-sanity
 	$(MAKE) ARCH=$(ARCH) COMP=$(COMP) all
-	strip $(EXE)
-	cp $(EXE) /Users/michaelbyrne/cluster.mfb/$(EXE)
 
 profile-build: config-sanity objclean profileclean
 	@echo ""
@@ -449,8 +441,6 @@ profile-build: config-sanity objclean profileclean
 	@echo ""
 	@echo "Step 4/4. Deleting profile data ..."
 	$(MAKE) ARCH=$(ARCH) COMP=$(COMP) profileclean
-	strip $(EXE)
-	cp $(EXE) /Users/michaelbyrne/cluster.mfb/$(EXE)
 
 strip:
 	strip $(EXE)
@@ -466,12 +456,12 @@ clean: objclean profileclean
 
 # clean binaries and objects
 objclean:
-	@rm -f $(EXE) $(EXE).exe *.o
+	@rm -f $(EXE) $(EXE).exe *.o ./syzygy/*.o
 
 # clean auxiliary profiling files
 profileclean:
 	@rm -rf profdir
-	@rm -f bench.txt *.gcda *.gcno
+	@rm -f bench.txt *.gcda ./syzygy/*.gcda *.gcno ./syzygy/*.gcno
 	@rm -f stockfish.profdata *.profraw
 
 default:
@@ -553,7 +543,7 @@ icc-profile-make:
 
 icc-profile-use:
 	$(MAKE) ARCH=$(ARCH) COMP=$(COMP) \
-	EXTRACXXFLAGS='-prof_use -ipo -prof_dir ./profdir' \
+	EXTRACXXFLAGS='-prof_use -prof_dir ./profdir' \
 	all
 
 .depend:

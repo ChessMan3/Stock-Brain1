@@ -25,8 +25,7 @@
 #include "search.h"
 #include "thread.h"
 #include "uci.h"
-#include "tbprobe.h"
-#include "tzbook.h"
+#include "syzygy/tbprobe.h"
 
 namespace PSQT {
   void init();
@@ -44,7 +43,6 @@ int main(int argc, char* argv[]) {
   Search::init();
   Pawns::init();
   Threads.init();
-  tzbook.init(Options["BookPath"]);
 
   UCI::loop(argc, argv);
 
